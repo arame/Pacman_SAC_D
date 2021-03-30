@@ -5,6 +5,7 @@ import numpy as np
 from buffer import ReplayBuffer
 from networks import ActorNetwork, CriticNetwork, ValueNetwork
 from config import Hyper, Constants
+CUDA_LAUNCH_BLOCKING=1
 
 class Agent():
     def __init__(self, input_dims, env, n_actions):
@@ -25,10 +26,8 @@ class Agent():
 
     def choose_action(self, observation):
         state = T.Tensor([observation]).to(Constants.device)
-        actions, _ = self.actor.sample_normal(state)
-        #actions, _ = self.actor.sample_mvnormal(state)
-        # actions is an array of arrays due to the added dimension in state
-        return actions.cpu().detach().numpy()[0]
+        actions, probabilities, max_probability_action = self.actor.sample_normal(state)
+        return max_probability_action
 
     def remember(self, state, action, reward, new_state, done):
         self.memory.store_transition(state, action, reward, new_state, done)
@@ -37,22 +36,20 @@ class Agent():
         if self.memory.mem_cntr < self.batch_size:
             return
 
-        state, action, reward, new_state, done = \
-                self.memory.sample_buffer()
+        state, action, reward, new_state, done = self.memory.sample_buffer()
 
-        reward = T.tensor(reward, dtype=T.float).to(self.critic_1.device)
-        done = T.tensor(done).to(self.critic_1.device)
-        state_ = T.tensor(new_state, dtype=T.float).to(self.critic_1.device)
-        state = T.tensor(state, dtype=T.float).to(self.critic_1.device)
-        action = T.tensor(action, dtype=T.float).to(self.critic_1.device)
+        reward = T.tensor(reward, dtype=T.float).to(Constants.device)
+        done = T.tensor(done).to(Constants.device)
+        state_ = T.tensor(new_state, dtype=T.float).to(Constants.device)
+        state = T.tensor(state, dtype=T.float).to(Constants.device)
+        action = T.tensor(action, dtype=T.float).to(Constants.device)
 
         value = self.value(state).view(-1)
         value_ = self.target_value(state_).view(-1)
         value_[done] = 0.0
        
-        actions, log_probs = self.actor.sample_normal(state)
-        #actions, log_probs = self.actor.sample_mvnormal(state, reparameterize=False)
-        log_probs = log_probs.view(-1)
+        actions, probabilities, maximum_prob_action = self.actor.sample_normal(state)
+        log_probs = probabilities[1].view(-1)
         q1_new_policy = self.critic_1.forward(state, actions)
         q2_new_policy = self.critic_2.forward(state, actions)
         critic_value = T.min(q1_new_policy, q2_new_policy)

@@ -94,14 +94,14 @@ class ActorNetwork(nn.Module):
 
     def sample_normal(self, state):
         action_probs = self.forward(state)
-        max_probability_action = torch.argmax(action_probabilities, dim=-1)
+        max_probability_action = T.argmax(action_probs, dim=-1)
 
         action_distribution = Categorical(action_probs)
         action = action_distribution.sample().cpu()
         # Have to deal with situation of 0.0 probabilities because we can't do log 0
-        z = action_probabilities == 0.0
+        z = action_probs == 0.0
         z = z.float() * 1e-8
-        log_action_probabilities = torch.log(action_probabilities + z)
+        log_action_probabilities = torch.log(action_probs + z)
         return action, (action_probs, log_action_probabilities), max_probability_action
 
     def sample_mvnormal(self, state, reparameterize=True):

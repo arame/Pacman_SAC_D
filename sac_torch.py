@@ -26,7 +26,7 @@ class Agent():
 
     def choose_action(self, observation):
         state = T.Tensor([observation]).to(Constants.device)
-        actions, probabilities, max_probability_action = self.actor.sample_normal(state)
+        _, _, max_probability_action = self.actor.sample_action(state)
         return max_probability_action
 
     def remember(self, state, action, reward, new_state, done):
@@ -48,8 +48,9 @@ class Agent():
         value_ = self.target_value(state_).view(-1)
         value_[done] = 0.0
        
-        actions, probabilities, maximum_prob_action = self.actor.sample_normal(state)
+        actions, probabilities, _ = self.actor.sample_action(state)
         log_probs = probabilities[1].view(-1)
+        actions = actions.to(Constants.device)
         q1_new_policy = self.critic_1.forward(state, actions)
         q2_new_policy = self.critic_2.forward(state, actions)
         critic_value = T.min(q1_new_policy, q2_new_policy)
@@ -61,9 +62,8 @@ class Agent():
         value_loss.backward(retain_graph=True)
         self.value.optimizer.step()
 
-        actions, log_probs = self.actor.sample_normal(state)
-        #actions, log_probs = self.actor.sample_mvnormal(state, reparameterize=False)
-        log_probs = log_probs.view(-1)
+        actions, probabilities, maximum_prob_action = self.actor.sample_action(state)
+        log_probs = probabilities[1].view(-1)
         q1_new_policy = self.critic_1.forward(state, actions)
         q2_new_policy = self.critic_2.forward(state, actions)
         critic_value = T.min(q1_new_policy, q2_new_policy)

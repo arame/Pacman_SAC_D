@@ -4,10 +4,14 @@ from sac_torch import Agent
 from utils import plot_learning_curve
 import numpy as np
 from config import Hyper, Constants
+from atari_image import make_env
+import os
+CUDA_LAUNCH_BLOCKING=1
 
 def main():
-    env = gym.make(Constants.env_id)
-    agent = Agent(input_dims=env.observation_space.shape, env=env, n_actions=env.action_space.n)
+    env = make_env(Constants.env_id)
+    shape = env.observation_space.shape
+    agent = Agent(input_dims=shape, env=env, n_actions=env.action_space.n)
     filename = f"{Constants.env_id}_{Hyper.n_games}games_scale{agent.scale}_clamp_on_sigma.png"
     figure_file = f'plots/{filename}'
 

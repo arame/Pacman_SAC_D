@@ -1,5 +1,6 @@
 import numpy as np
 from config import Hyper, Constants
+CUDA_LAUNCH_BLOCKING=1
 
 class ReplayBuffer():
     def __init__(self, input_shape):

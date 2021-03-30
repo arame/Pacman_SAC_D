@@ -6,7 +6,9 @@ import torch.nn.functional as F
 import torch.optim as optim
 from torch.distributions.normal import Normal
 import numpy as np
+from PIL import Image
 from config import Hyper, Constants
+CUDA_LAUNCH_BLOCKING=1
 
 class CriticNetwork(nn.Module):
     def __init__(self, input_dims, n_actions, name):
@@ -17,9 +19,9 @@ class CriticNetwork(nn.Module):
         self.n_actions = n_actions
         self.name = name
         self.checkpoint_file = os.path.join(Constants.chkpt_dir, name+'_sac')
-        self.conv1 = nn.Conv2d(input_dims[0], 32, 1)
-        self.conv2 = nn.Conv2d(32, 64, 1)
-        self.conv3 = nn.Conv2d(64, 64, 1)
+        self.conv1 = nn.Conv2d(input_dims[0], 32, 8, stride=4)
+        self.conv2 = nn.Conv2d(32, 64, 4, stride=2)
+        self.conv3 = nn.Conv2d(64, 64, 3, stride=1)
         fc_input_dims = self.calculate_conv_output_dims(input_dims)
         self.fc1 = nn.Linear(fc_input_dims, self.fc1_dims) 
         self.fc2 = nn.Linear(self.fc1_dims, self.fc2_dims)
@@ -65,9 +67,9 @@ class ActorNetwork(nn.Module):
         self.max_action = max_action
         self.checkpoint_file = os.path.join(Constants.chkpt_dir, name+'_sac')
         self.reparam_noise = 1e-6
-        self.conv1 = nn.Conv2d(input_dims[0], 32, 1)
-        self.conv2 = nn.Conv2d(32, 64, 1)
-        self.conv3 = nn.Conv2d(64, 64, 1)
+        self.conv1 = nn.Conv2d(input_dims[0], 32, 8, stride=4)
+        self.conv2 = nn.Conv2d(32, 64, 4, stride=2)
+        self.conv3 = nn.Conv2d(64, 64, 3, stride=1)
         fc_input_dims = self.calculate_conv_output_dims(input_dims)
         self.fc1 = nn.Linear(fc_input_dims, self.fc1_dims) 
         self.fc2 = nn.Linear(self.fc1_dims, self.fc2_dims)
@@ -89,19 +91,20 @@ class ActorNetwork(nn.Module):
         conv_state = conv3.view(conv3.size()[0], -1)
         prob = F.relu(self.fc1(conv_state))
         prob = F.relu(self.fc2(prob))
-        action_probs = self.action_probabilities(prob)
+        action_probs = F.softmax(self.action_probabilities(prob))
         return action_probs
 
-    def sample_normal(self, state):
+    def sample_action(self, state):
         action_probs = self.forward(state)
         max_probability_action = T.argmax(action_probs, dim=-1)
-
+        max_probability_action = max_probability_action[0].cpu().item()
         action_distribution = Categorical(action_probs)
-        action = action_distribution.sample().cpu()
+        action1 = action_distribution.sample()
+        action = action1.cpu()
         # Have to deal with situation of 0.0 probabilities because we can't do log 0
         z = action_probs == 0.0
         z = z.float() * 1e-8
-        log_action_probabilities = torch.log(action_probs + z)
+        log_action_probabilities = T.log(action_probs + z)
         return action, (action_probs, log_action_probabilities), max_probability_action
 
     def sample_mvnormal(self, state, reparameterize=True):
@@ -141,9 +144,9 @@ class ValueNetwork(nn.Module):
         self.fc2_dims = Hyper.layer2_size
         self.name = name
         self.checkpoint_file = os.path.join(Constants.chkpt_dir, name+'_sac')
-        self.conv1 = nn.Conv2d(input_dims[0], 32, 1)
-        self.conv2 = nn.Conv2d(32, 64, 1)
-        self.conv3 = nn.Conv2d(64, 64, 1)
+        self.conv1 = nn.Conv2d(input_dims[0], 32, 8, stride=4)
+        self.conv2 = nn.Conv2d(32, 64, 4, stride=2)
+        self.conv3 = nn.Conv2d(64, 64, 3, stride=1)
         fc_input_dims = self.calculate_conv_output_dims(input_dims)
         self.fc1 = nn.Linear(fc_input_dims, self.fc1_dims)
         self.fc2 = nn.Linear(self.fc1_dims, self.fc2_dims)

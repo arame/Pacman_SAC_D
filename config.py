@@ -12,6 +12,8 @@ class Hyper:
     n_actions=2
     #max_size=1000000
     max_size=1000
+    image_shape = (84,84,1)
+    image_jump = 4
 
 class Constants:
     env_id = 'MsPacmanNoFrameskip-v4'

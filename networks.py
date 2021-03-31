@@ -42,6 +42,7 @@ class CriticNetwork(nn.Module):
         conv2 = F.relu(self.conv2(conv1))
         conv3 = F.relu(self.conv3(conv2))
         conv_state = conv3.view(conv3.size()[0], -1)
+        # TODO - cannot concatenate a vector of floats and integers
         q1_action_value = T.cat([conv_state, action], dim=1)
         q1_action_value = F.relu(self.fc1(q1_action_value))
         q1_action_value = F.relu(self.fc2(q1_action_value))
@@ -91,7 +92,7 @@ class ActorNetwork(nn.Module):
         conv_state = conv3.view(conv3.size()[0], -1)
         prob = F.relu(self.fc1(conv_state))
         prob = F.relu(self.fc2(prob))
-        action_probs = F.softmax(self.action_probabilities(prob))
+        action_probs = F.softmax(self.action_probabilities(prob), dim = 1)
         return action_probs
 
     def sample_action(self, state):

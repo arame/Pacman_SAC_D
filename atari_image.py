@@ -41,7 +41,8 @@ class RepeatActionAndMaxFrame(gym.Wrapper):
 class PreprocessFrame(gym.ObservationWrapper):
     def __init__(self, env=None):
         super(PreprocessFrame, self).__init__(env)
-        self.shape=Hyper.image_shape
+        shape_=Hyper.image_shape
+        self.shape=(shape_[2], shape_[0], shape_[1])
         self.observation_space = gym.spaces.Box(low=0, high=1.0, shape=self.shape,dtype=np.float32)
 
     def observation(self, obs):

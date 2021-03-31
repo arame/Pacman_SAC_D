@@ -10,7 +10,7 @@ CUDA_LAUNCH_BLOCKING=1
 
 def main():
     env = make_env(Constants.env_id)
-    shape = env.observation_space.shape
+    shape = (env.observation_space.shape)
     agent = Agent(input_dims=shape, env=env, n_actions=env.action_space.n)
     filename = f"{Constants.env_id}_{Hyper.n_games}games_scale{agent.scale}_clamp_on_sigma.png"
     figure_file = f'plots/{filename}'

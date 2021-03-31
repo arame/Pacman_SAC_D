@@ -48,11 +48,11 @@ class Agent():
         value_ = self.target_value(state_).view(-1)
         value_[done] = 0.0
        
-        actions, probabilities, _ = self.actor.sample_action(state)
-        log_probs = probabilities[1].view(-1)
+        actions, probabilities, max_probability_action = self.actor.sample_action(state)
+        log_probs = probabilities[1]
         actions = actions.to(Constants.device)
-        q1_new_policy = self.critic_1.forward(state, actions)
-        q2_new_policy = self.critic_2.forward(state, actions)
+        q1_new_policy = self.critic_1.forward(state)
+        q2_new_policy = self.critic_2.forward(state)
         critic_value = T.min(q1_new_policy, q2_new_policy)
         critic_value = critic_value.view(-1)
         
@@ -63,9 +63,9 @@ class Agent():
         self.value.optimizer.step()
 
         actions, probabilities, maximum_prob_action = self.actor.sample_action(state)
-        log_probs = probabilities[1].view(-1)
-        q1_new_policy = self.critic_1.forward(state, actions)
-        q2_new_policy = self.critic_2.forward(state, actions)
+        log_probs = probabilities[1]
+        q1_new_policy = self.critic_1.forward(state)
+        q2_new_policy = self.critic_2.forward(state)
         critic_value = T.min(q1_new_policy, q2_new_policy)
         critic_value = critic_value.view(-1)
 
@@ -78,8 +78,8 @@ class Agent():
         self.critic_1.optimizer.zero_grad()
         self.critic_2.optimizer.zero_grad()
         q_hat = self.scale*reward + self.gamma*value_
-        q1_old_policy = self.critic_1.forward(state, action).view(-1)
-        q2_old_policy = self.critic_2.forward(state, action).view(-1)
+        q1_old_policy = self.critic_1.forward(state).view(-1)
+        q2_old_policy = self.critic_2.forward(state).view(-1)
         critic_1_loss = 0.5*F.mse_loss(q1_old_policy, q_hat)
         critic_2_loss = 0.5*F.mse_loss(q2_old_policy, q_hat)
 

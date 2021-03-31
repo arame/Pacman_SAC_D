@@ -24,8 +24,7 @@ class CriticNetwork(nn.Module):
         self.conv3 = nn.Conv2d(64, 64, 3, stride=1)
         fc_input_dims = self.calculate_conv_output_dims(input_dims)
         self.fc1 = nn.Linear(fc_input_dims, self.fc1_dims) 
-        self.fc2 = nn.Linear(self.fc1_dims, self.fc2_dims)
-        self.q1 = nn.Linear(self.fc2_dims, 1)
+        self.fc2 = nn.Linear(self.fc1_dims, self.n_actions)
 
         self.optimizer = optim.Adam(self.parameters(), lr=Hyper.beta)
         self.to(Constants.device)
@@ -37,19 +36,16 @@ class CriticNetwork(nn.Module):
         dims = self.conv3(dims)
         return int(np.prod(dims.size()))
 
-    def forward(self, state, action):
+    def forward(self, state):
         conv1 = F.relu(self.conv1(state))
         conv2 = F.relu(self.conv2(conv1))
         conv3 = F.relu(self.conv3(conv2))
         conv_state = conv3.view(conv3.size()[0], -1)
-        # TODO - cannot concatenate a vector of floats and integers
-        q1_action_value = T.cat([conv_state, action], dim=1)
-        q1_action_value = F.relu(self.fc1(q1_action_value))
-        q1_action_value = F.relu(self.fc2(q1_action_value))
-
-        q1 = self.q1(q1_action_value)
-
-        return q1
+        # calculate action value from state
+        q1_action_value = F.relu(self.fc1(conv_state))
+        action_logits = F.relu(self.fc2(q1_action_value))
+        greedy_actions = T.argmax(action_logits, dim=1, keepdim=True)
+        return greedy_actions
 
     def save_checkpoint(self):
         T.save(self.state_dict(), self.checkpoint_file)
@@ -105,7 +101,8 @@ class ActorNetwork(nn.Module):
         # Have to deal with situation of 0.0 probabilities because we can't do log 0
         z = action_probs == 0.0
         z = z.float() * 1e-8
-        log_action_probabilities = T.log(action_probs + z)
+        log_probs = T.log(action_probs + z) # 
+        log_action_probabilities = log_probs[:, max_probability_action]
         return action, (action_probs, log_action_probabilities), max_probability_action
 
     def sample_mvnormal(self, state, reparameterize=True):

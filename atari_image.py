@@ -4,14 +4,12 @@ import numpy as np
 from config import Constants, Hyper
 import gym
 
-# Code taken from 
-# https://github.com/philtabor/Deep-Q-Learning-Paper-To-Code/blob/2815d8a1ba6f7a2338a905c371ed1e429c8aeaac/utils.py
-
+""" modified from:
+    https://github.com/PacktPublishing/Deep-Reinforcement-Learning-Hands-On/blob/master/Chapter06/lib/wrappers.py
+"""
 
 class RepeatActionAndMaxFrame(gym.Wrapper):
-    """ modified from:
-        https://github.com/PacktPublishing/Deep-Reinforcement-Learning-Hands-On/blob/master/Chapter06/lib/wrappers.py
-    """
+
     def __init__(self, env=None):
         super(RepeatActionAndMaxFrame, self).__init__(env)
         self.repeat = Hyper.image_jump

@@ -57,7 +57,7 @@ class Agent():
         critic_value = critic_value.view(-1)
         
         self.value.optimizer.zero_grad()
-        value_target = critic_value - log_probs
+        value_target = critic_value - log_probs[:, max_probability_action]
         value_loss = 0.5 * (F.mse_loss(value, value_target))
         value_loss.backward(retain_graph=True)
         self.value.optimizer.step()
@@ -69,7 +69,7 @@ class Agent():
         critic_value = T.min(q1_new_policy, q2_new_policy)
         critic_value = critic_value.view(-1)
 
-        actor_loss = log_probs - critic_value
+        actor_loss = log_probs[:, maximum_prob_action] - critic_value
         actor_loss = T.mean(actor_loss)
         self.actor.optimizer.zero_grad()
         actor_loss.backward(retain_graph=True)

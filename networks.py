@@ -92,6 +92,12 @@ class ActorNetwork(nn.Module):
         return action_probs
 
     def sample_action(self, state):
+        # CHANGE0001 
+        # It is now more efficient to have the soft Q-function output the Q-value of each possible action rather 
+        # than simply the action provided as an input.
+        # CHANGE0002
+        # There is now no need for our policy to output the mean and covariance of our action distribution, 
+        # instead it can directly output our action distribution.
         action_probs = self.forward(state)
         max_probability_action = T.argmax(action_probs, dim=-1)
         max_probability_action = max_probability_action[0].cpu().item()
@@ -101,32 +107,10 @@ class ActorNetwork(nn.Module):
         # Have to deal with situation of 0.0 probabilities because we can't do log 0
         z = action_probs == 0.0
         z = z.float() * 1e-8
-        log_probs = T.log(action_probs + z) # 
-        log_action_probabilities = log_probs[:, max_probability_action]
+        """ log_probs = T.log(action_probs + z) # 
+        log_action_probabilities = log_probs[:, max_probability_action] """
+        log_action_probabilities = T.log(action_probs + z)
         return action, (action_probs, log_action_probabilities), max_probability_action
-
-    def sample_mvnormal(self, state, reparameterize=True):
-        """
-            Doesn't quite seem to work.  The agent never learns.
-        """
-        mu, sigma = self.forward(state)
-        n_batches = sigma.size()[0]
-
-        cov = [sigma[i] * T.eye(self.n_actions).to(self.device) for i in range(n_batches)]
-        cov = T.stack(cov)
-        probabilities = T.distributions.MultivariateNormal(mu, cov)
-
-        if reparameterize:
-            actions = probabilities.rsample() # reparameterizes the policy
-        else:
-            actions = probabilities.sample()
-
-        action = T.tanh(actions) # enforce the action bound for (-1, 1)
-        log_probs = probabilities.log_prob(actions)
-        log_probs -= T.sum(T.log(1-action.pow(2) + self.reparam_noise))
-        log_probs = log_probs.sum(-1, keepdim=True)
-
-        return action, log_probs
 
     def save_checkpoint(self):
         T.save(self.state_dict(), self.checkpoint_file)

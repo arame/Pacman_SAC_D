@@ -9,7 +9,7 @@ import os
 CUDA_LAUNCH_BLOCKING=1
 
 def main():
-    env = make_env(Constants.env_id)
+    env = make_env(Constants.env_id)    # See wrapper code for environment in atari_image.py
     shape = (env.observation_space.shape)
     agent = Agent(input_dims=shape, env=env, n_actions=env.action_space.n)
     filename = f"{Constants.env_id}_{Hyper.n_games}games_scale{agent.scale}_clamp_on_sigma.png"
@@ -21,15 +21,17 @@ def main():
     if load_checkpoint:
         agent.load_models()
         env.render(mode='human')
-    steps = 0
+    total_steps = 0
     for i in range(Hyper.n_games):
         observation = env.reset()
         done = False
+        steps = 0
         score = 0
         while not done:
             action = agent.choose_action(observation)
             new_observation, reward, done, info = env.step(action)
             steps += 1
+            total_steps += 1
             agent.remember(observation, action, reward, new_observation, done)
             if not load_checkpoint:
                 agent.learn()
@@ -43,8 +45,10 @@ def main():
             if not load_checkpoint:
                 agent.save_models()
 
-        print(f"episode {i}: score {score}, trailing 100 games avg {avg_score}, steps {steps}, {Constants.env_id} scale {agent.scale}")
+        episode = i + 1
+        print(f"episode {episode}: score {score}, trailing 100 games avg {avg_score}, steps {steps}, {Constants.env_id} scale {agent.scale}")
 
+    print(f"total number of steps taken: {total_steps}")
     if not load_checkpoint:
         x = [i+1 for i in range(Hyper.n_games)]
         plot_learning_curve(x, score_history, figure_file)

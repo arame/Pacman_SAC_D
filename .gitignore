@@ -1,0 +1,8 @@
+
+node_modules 
+*.env 
+.env* 
+*.png
+*_sac
+*.local
+*.ipynb

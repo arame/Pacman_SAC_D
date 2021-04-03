@@ -36,13 +36,13 @@ class Agent():
 
         reward = T.tensor(reward, dtype=T.float).to(Constants.device)
         done = T.tensor(done).to(Constants.device)
-        state_ = T.tensor(new_state, dtype=T.float).to(Constants.device)
+        new_state = T.tensor(new_state, dtype=T.float).to(Constants.device)
         state = T.tensor(state, dtype=T.float).to(Constants.device)
         action = T.tensor(action, dtype=T.float).to(Constants.device)
 
         value = self.value(state).view(-1)
-        value_ = self.target_value(state_).view(-1)
-        value_[done] = 0.0
+        new_value = self.target_value(new_state).view(-1)
+        new_value[done] = 0.0
        
         actions, probabilities, max_probability_action = self.actor.sample_action(state)
         log_probs = probabilities[1]
@@ -73,7 +73,7 @@ class Agent():
 
         self.critic_1.optimizer.zero_grad()
         self.critic_2.optimizer.zero_grad()
-        q_hat = Hyper.reward_scale*reward + Hyper.gamma*value_
+        q_hat = Hyper.reward_scale*reward + Hyper.gamma*new_value
         q1_old_policy = self.critic_1.forward(state).view(-1)
         q2_old_policy = self.critic_2.forward(state).view(-1)
         critic_1_loss = 0.5*F.mse_loss(q1_old_policy, q_hat)

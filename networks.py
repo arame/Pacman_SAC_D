@@ -101,14 +101,12 @@ class ActorNetwork(nn.Module):
         action_probs = self.forward(state)
         max_probability_action = T.argmax(action_probs, dim=-1)
         max_probability_action = max_probability_action[0].cpu().item()
-        action_distribution = Categorical(action_probs)
+        action_distribution = Categorical(action_probs) 
         action1 = action_distribution.sample()
         action = action1.cpu()
         # Have to deal with situation of 0.0 probabilities because we can't do log 0
         z = action_probs == 0.0
         z = z.float() * 1e-8
-        """ log_probs = T.log(action_probs + z) # 
-        log_action_probabilities = log_probs[:, max_probability_action] """
         log_action_probabilities = T.log(action_probs + z)
         return action, (action_probs, log_action_probabilities), max_probability_action
 

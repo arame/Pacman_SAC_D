@@ -9,10 +9,7 @@ CUDA_LAUNCH_BLOCKING=1
 
 class Agent():
     def __init__(self, input_dims, env, n_actions):
-        self.gamma = Hyper.beta
-        self.tau = Hyper.tau
         self.memory = ReplayBuffer(input_dims)
-        self.batch_size = Hyper.batch_size
         self.n_actions = n_actions
 
         self.actor = ActorNetwork(input_dims, n_actions=n_actions, name=Constants.env_id+'_actor', max_action=env.action_space.n)
@@ -21,7 +18,6 @@ class Agent():
         self.value = ValueNetwork(input_dims, name=Constants.env_id+'_value')
         self.target_value = ValueNetwork(input_dims, name=Constants.env_id+'_target_value')
 
-        self.scale = Hyper.reward_scale
         self.update_network_parameters(tau=1)
 
     def choose_action(self, observation):
@@ -33,7 +29,7 @@ class Agent():
         self.memory.store_transition(state, action, reward, new_state, done)
 
     def learn(self):
-        if self.memory.mem_cntr < self.batch_size:
+        if self.memory.mem_cntr < Hyper.batch_size:
             return
 
         state, action, reward, new_state, done = self.memory.sample_buffer()
@@ -77,7 +73,7 @@ class Agent():
 
         self.critic_1.optimizer.zero_grad()
         self.critic_2.optimizer.zero_grad()
-        q_hat = self.scale*reward + self.gamma*value_
+        q_hat = Hyper.reward_scale*reward + Hyper.gamma*value_
         q1_old_policy = self.critic_1.forward(state).view(-1)
         q2_old_policy = self.critic_2.forward(state).view(-1)
         critic_1_loss = 0.5*F.mse_loss(q1_old_policy, q_hat)
@@ -91,7 +87,7 @@ class Agent():
 
     def update_network_parameters(self, tau=None):
         if tau is None:
-            tau = self.tau
+            tau = Hyper.tau
 
         target_value_params = self.target_value.named_parameters()
         value_params = self.value.named_parameters()

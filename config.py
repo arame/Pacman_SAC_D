@@ -1,21 +1,46 @@
 import torch as T
+import os
+
 
 class Hyper:
-    alpha=0.0003
-    beta=0.0003
-    reward_scale=2
-    tau=0.005
+    alpha=0.0003    # learning rate for actor network
+    beta=0.0003     # learning rate for critic and value networks
+    gamma = 0.99    # discount factor
+    reward_scale=2  # reward scale is the most important hyperparameter
+    tau=0.005       # tests show that 0.005 is about the best value
     batch_size=256
     layer1_size=256
     layer2_size=256
     n_games = 250
-    n_actions=2
+    n_actions = 9
     #max_size=1000000
-    max_size=1000
-    image_shape = (84,84,1)
-    image_jump = 4
+    max_size=1000   # 1 million is a better value but my computer can't take it
+    image_shape = (84,84,1)     # resize image to improve performance
+    image_jump = 4              # input every fourth image
+    chkpt_dir = 'save_model'
+    plots_dir = "plots"
+
+    def init():
+        # Gaurantees the folders for output exist
+        if os.path.isdir(Hyper.plots_dir) == False:
+            os.mkdir(Hyper.plots_dir)
+        if os.path.isdir(Hyper.chkpt_dir) == False:
+            os.mkdir(Hyper.chkpt_dir)
+
+        print("\n"*3)
+        print("*"*100)
+        print("Hyperparameters used:")
+        print("---------------------")
+        print(f"alpha = {Hyper.alpha}")
+        print(f"beta = {Hyper.beta}")
+        print(f"gamma = {Hyper.gamma}")
+        print(f"reward scale = {Hyper.reward_scale}")
+        print(f"tau = {Hyper.tau}")
+        print(f"batch size = {Hyper.batch_size}")
+        print(f"number of games = {Hyper.n_games}")
+        print("*"*100)
+
 
 class Constants:
     env_id = 'MsPacmanNoFrameskip-v4'
-    chkpt_dir='save_model/sac'
     device = T.device('cuda:0' if T.cuda.is_available() else 'cpu')

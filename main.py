@@ -9,10 +9,12 @@ import os
 CUDA_LAUNCH_BLOCKING=1
 
 def main():
+    Hyper.init()
     env = make_env(Constants.env_id)    # See wrapper code for environment in atari_image.py
+    Hyper.n_actions = env.action_space.n
     shape = (env.observation_space.shape)
     agent = Agent(input_dims=shape, env=env, n_actions=env.action_space.n)
-    filename = f"{Constants.env_id}_{Hyper.n_games}games_scale{agent.scale}_clamp_on_sigma.png"
+    filename = f"{Constants.env_id}_games{Hyper.n_games}_scale{Hyper.reward_scale}.png"
     figure_file = f'plots/{filename}'
 
     best_score = env.reward_range[0]
@@ -46,7 +48,7 @@ def main():
                 agent.save_models()
 
         episode = i + 1
-        print(f"episode {episode}: score {score}, trailing 100 games avg {avg_score}, steps {steps}, {Constants.env_id} scale {agent.scale}")
+        print(f"episode {episode}: score {score}, trailing 100 games avg {avg_score}, steps {steps}, {Constants.env_id} scale {Hyper.reward_scale}")
 
     print(f"total number of steps taken: {total_steps}")
     if not load_checkpoint:

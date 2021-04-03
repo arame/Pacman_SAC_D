@@ -18,7 +18,7 @@ class CriticNetwork(nn.Module):
         self.fc2_dims = Hyper.layer2_size
         self.n_actions = n_actions
         self.name = name
-        self.checkpoint_file = os.path.join(Constants.chkpt_dir, name+'_sac')
+        self.checkpoint_file = os.path.join(Hyper.chkpt_dir, name+'_sac')
         self.conv1 = nn.Conv2d(input_dims[0], 32, 8, stride=4)
         self.conv2 = nn.Conv2d(32, 64, 4, stride=2)
         self.conv3 = nn.Conv2d(64, 64, 3, stride=1)
@@ -62,7 +62,7 @@ class ActorNetwork(nn.Module):
         self.n_actions = n_actions
         self.name = name
         self.max_action = max_action
-        self.checkpoint_file = os.path.join(Constants.chkpt_dir, name+'_sac')
+        self.checkpoint_file = os.path.join(Hyper.chkpt_dir, name+'_sac')
         self.reparam_noise = 1e-6
         self.conv1 = nn.Conv2d(input_dims[0], 32, 8, stride=4)
         self.conv2 = nn.Conv2d(32, 64, 4, stride=2)
@@ -125,7 +125,7 @@ class ValueNetwork(nn.Module):
         self.fc1_dims = Hyper.layer1_size
         self.fc2_dims = Hyper.layer2_size
         self.name = name
-        self.checkpoint_file = os.path.join(Constants.chkpt_dir, name+'_sac')
+        self.checkpoint_file = os.path.join(Hyper.chkpt_dir, name+'_sac')
         self.conv1 = nn.Conv2d(input_dims[0], 32, 8, stride=4)
         self.conv2 = nn.Conv2d(32, 64, 4, stride=2)
         self.conv3 = nn.Conv2d(64, 64, 3, stride=1)

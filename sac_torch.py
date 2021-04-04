@@ -48,10 +48,10 @@ class Agent():
         q1_new_policy = self.critic_1_nn.forward(state)
         q2_new_policy = self.critic_2_nn.forward(state)
         critic_value = T.min(q1_new_policy, q2_new_policy)
-        critic_value = critic_value.view(-1)
         
         self.value_nn.optimizer.zero_grad()
-        value_target = critic_value - log_action_probabilities[:, max_probability_action]   # FIX
+        # CHANGE0003 Soft state-value where actions are discrete
+        value_target = action_probabilities * (critic_value - Hyper.alpha * log_action_probabilities)   
         value_loss = 0.5 * (F.mse_loss(value_from_nn, value_target))
         value_loss.backward(retain_graph=True)
         self.value_nn.optimizer.step()

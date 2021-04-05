@@ -21,7 +21,7 @@ class Agent():
 
     def choose_action(self, observation):
         state = T.Tensor([observation]).to(Constants.device)
-        _, _, max_probability_action = self.actor_nn.sample_action(state)
+        _, max_probability_action = self.actor_nn.sample_action(state)
         return max_probability_action
 
     def remember(self, state, action, reward, new_state, done):
@@ -39,30 +39,31 @@ class Agent():
         state = T.tensor(state, dtype=T.float).to(Constants.device)
         action = T.tensor(action, dtype=T.float).to(Constants.device)
 
-        value_from_nn = self.value_nn(state).view(-1)
+        # value_from_nn = self.value_nn(state).view(-1)
+        value_from_nn = self.value_nn(state)
         new_value_from_nn = self.target_value_nn(new_state).view(-1)
         new_value_from_nn[done] = 0.0
        
-        actions, (action_probabilities, log_action_probabilities), max_probability_action = self.actor_nn.sample_action(state)
-        actions = actions.to(Constants.device)
+        (action_probabilities, log_action_probabilities), _ = self.actor_nn.sample_action(state)
         q1_new_policy = self.critic_1_nn.forward(state)
         q2_new_policy = self.critic_2_nn.forward(state)
         critic_value = T.min(q1_new_policy, q2_new_policy)
         
         self.value_nn.optimizer.zero_grad()
         # CHANGE0003 Soft state-value where actions are discrete
-        value_target = action_probabilities * (critic_value - Hyper.alpha * log_action_probabilities)   
-        value_loss = 0.5 * (F.mse_loss(value_from_nn, value_target))
+        inside_term = Hyper.alpha * log_action_probabilities - critic_value
+        #value_target = action_probabilities * (critic_value - Hyper.alpha * log_action_probabilities)   
+        value_loss = (action_probabilities * inside_term).sum(dim=1).mean()
         value_loss.backward(retain_graph=True)
         self.value_nn.optimizer.step()
 
-        actions, (action_probabilities, log_action_probabilities), maximum_prob_action = self.actor_nn.sample_action(state)
+        (action_probabilities, log_action_probabilities), _ = self.actor_nn.sample_action(state)
         q1_new_policy = self.critic_1_nn.forward(state)
         q2_new_policy = self.critic_2_nn.forward(state)
         critic_value = T.min(q1_new_policy, q2_new_policy)
-        critic_value = critic_value.view(-1)
 
-        actor_loss = log_action_probabilities[:, maximum_prob_action] - critic_value    # FIX
+        # CHANGE0005 Objective for policy
+        actor_loss = action_probabilities * (Hyper.alpha * log_action_probabilities - critic_value)
         actor_loss = T.mean(actor_loss)
         self.actor_nn.optimizer.zero_grad()
         actor_loss.backward(retain_graph=True)

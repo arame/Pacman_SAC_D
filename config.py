@@ -8,7 +8,7 @@ class Hyper:
     gamma = 0.99    # discount factor
     reward_scale=2  # reward scale is the most important hyperparameter
     tau=0.005       # tests show that 0.005 is about the best value
-    batch_size=256
+    batch_size=100
     layer1_size=256
     layer2_size=256
     n_games = 250

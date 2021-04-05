@@ -31,22 +31,22 @@ class Agent():
         if self.memory.mem_cntr < Hyper.batch_size:
             return
 
-        state, action, reward, new_state, done = self.memory.sample_buffer()
+        state, action, reward, next_state, done = self.memory.sample_buffer()
 
         reward = T.tensor(reward, dtype=T.float).to(Constants.device)
         done = T.tensor(done).to(Constants.device)
-        new_state = T.tensor(new_state, dtype=T.float).to(Constants.device)
+        next_state = T.tensor(next_state, dtype=T.float).to(Constants.device)
         state = T.tensor(state, dtype=T.float).to(Constants.device)
         action = T.tensor(action, dtype=T.float).to(Constants.device)
 
         # value_from_nn = self.value_nn(state).view(-1)
         value_from_nn = self.value_nn(state)
-        new_value_from_nn = self.target_value_nn(new_state).view(-1)
+        new_value_from_nn = self.target_value_nn(next_state).view(-1)
         new_value_from_nn[done] = 0.0
        
         (action_probabilities, log_action_probabilities), _ = self.actor_nn.sample_action(state)
-        q1_new_policy = self.critic_1_nn.forward(state)
-        q2_new_policy = self.critic_2_nn.forward(state)
+        q1_new_policy = self.critic_1_nn(state)
+        q2_new_policy = self.critic_2_nn(state)
         critic_value = T.min(q1_new_policy, q2_new_policy)
         
         self.value_nn.optimizer.zero_grad()
@@ -58,8 +58,8 @@ class Agent():
         self.value_nn.optimizer.step()
 
         (action_probabilities, log_action_probabilities), _ = self.actor_nn.sample_action(state)
-        q1_new_policy = self.critic_1_nn.forward(state)
-        q2_new_policy = self.critic_2_nn.forward(state)
+        q1_new_policy = self.critic_1_nn(state)
+        q2_new_policy = self.critic_2_nn(state)
         critic_value = T.min(q1_new_policy, q2_new_policy)
 
         # CHANGE0005 Objective for policy
@@ -72,8 +72,8 @@ class Agent():
         self.critic_1_nn.optimizer.zero_grad()
         self.critic_2_nn.optimizer.zero_grad()
         q_hat = Hyper.reward_scale*reward + Hyper.gamma*new_value_from_nn
-        q1_old_policy = self.critic_1_nn.forward(state).view(-1)
-        q2_old_policy = self.critic_2_nn.forward(state).view(-1)
+        q1_old_policy = self.critic_1_nn(state).view(-1)
+        q2_old_policy = self.critic_2_nn(state).view(-1)
         critic_1_loss = 0.5*F.mse_loss(q1_old_policy, q_hat)
         critic_2_loss = 0.5*F.mse_loss(q2_old_policy, q_hat)
 

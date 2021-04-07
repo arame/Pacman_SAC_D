@@ -30,10 +30,15 @@ def main():
         steps = 0
         score = 0
         while not done:
-            action = agent.choose_action(observation)
+            # Sample action from the policy
+            action = agent.choose_action(observation) 
+
+            # Sample transition from the environment  
             new_observation, reward, done, info = env.step(action)
             steps += 1
             total_steps += 1
+
+            # Store transition in the replay buffer
             agent.remember(observation, action, reward, new_observation, done)
             if not load_checkpoint:
                 agent.learn()

@@ -44,8 +44,7 @@ class CriticNetwork(nn.Module):
         # calculate action value from state
         q1_action_value = F.relu(self.fc1(conv_state))
         action_logits = F.relu(self.fc2(q1_action_value))
-        greedy_actions = T.argmax(action_logits, dim=1, keepdim=True)
-        return greedy_actions
+        return action_logits
 
     def save_checkpoint(self):
         T.save(self.state_dict(), self.checkpoint_file)
@@ -99,6 +98,8 @@ class ActorNetwork(nn.Module):
         # There is now no need for our policy to output the mean and covariance of our action distribution, 
         # instead it can directly output our action distribution.
         action_probs = self.forward(state)
+        action_probs_1 = F.softmax(action_probs, dim=1)
+        action_dist = Categorical(action_probs_1)
         max_probability_action = T.argmax(action_probs, dim=-1)
         max_probability_action = max_probability_action[0].cpu().item()
         # Have to deal with situation of 0.0 probabilities because we can't do log 0

@@ -48,10 +48,8 @@ class Agent():
        
         (action_probabilities, log_action_probabilities), _ = self.actor_nn.sample_action(next_state)
         with T.no_grad():
-            action_logits1 = self.critic_target_1_nn(next_state)
-            q1_new_policy = T.argmax(action_logits1, dim=1, keepdim=True)
-            action_logits2 = self.critic_target_2_nn(next_state)
-            q2_new_policy = T.argmax(action_logits2, dim=1, keepdim=True)
+            q1_new_policy = self.critic_target_1_nn(next_state)
+            q2_new_policy = self.critic_target_2_nn(next_state)
             critic_value = T.min(q1_new_policy, q2_new_policy)
         
         self.value_nn.optimizer.zero_grad()
@@ -63,6 +61,11 @@ class Agent():
         self.value_nn.optimizer.step()
 
         (action_probabilities, log_action_probabilities), _ = self.actor_nn.sample_action(state)
+        with T.no_grad():
+            q1_new_policy = self.critic_local_1_nn(state)
+            q2_new_policy = self.critic_local_1_nn(state)
+            critic_value = T.min(q1_new_policy, q2_new_policy)
+
         # CHANGE0005 Objective for policy
         actor_loss = action_probabilities * (Hyper.alpha * log_action_probabilities - critic_value)
         actor_loss = T.mean(actor_loss)

@@ -39,12 +39,14 @@ class CriticNetwork(nn.Module):
     def forward(self, state):
         conv1 = F.relu(self.conv1(state))
         conv2 = F.relu(self.conv2(conv1))
-        conv3 = F.relu(self.conv3(conv2))
+        conv3 = F.relu(self.conv3(conv2))   
         conv_state = conv3.view(conv3.size()[0], -1)
         # calculate action value from state
         q1_action_value = F.relu(self.fc1(conv_state))
         action_logits = F.relu(self.fc2(q1_action_value))
         return action_logits
+        """ greedy_actions = T.argmax(action_logits, dim=1, keepdim=True)
+        return greedy_actions """
 
     def save_checkpoint(self):
         T.save(self.state_dict(), self.checkpoint_file)

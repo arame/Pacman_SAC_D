@@ -14,7 +14,7 @@ def main():
     Hyper.n_actions = env.action_space.n
     shape = (env.observation_space.shape)
     agent = Agent(input_dims=shape, env=env, n_actions=env.action_space.n)
-    filename = f"{Constants.env_id}_games{Hyper.n_games}_scale{Hyper.reward_scale}.png"
+    filename = f"{Constants.env_id}_games{Hyper.n_games}_alpha{Hyper.alpha}.png"
     figure_file = f'plots/{filename}'
 
     best_score = env.reward_range[0]

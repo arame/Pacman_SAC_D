@@ -12,11 +12,6 @@ class Agent():
     def __init__(self, input_dims, env, n_actions):
         self.memory = ReplayBuffer(input_dims)
         self.n_actions = n_actions
-        """ self.target_entropy = -T.prod(T.Tensor(env.action_space.shape).to(Constants.device)).item() # heuristic value from the paper
-        self.log_alpha = T.zeros(1, requires_grad=True, device=Constants.device)
-        self.alpha = self.log_alpha.exp()
-        self.alpha_optim = Adam([self.log_alpha], lr=Hyper.alpha, eps=1e-4) """
-        #self.target_entropy = - env.action_space.n_actions
         self.actor_nn = ActorNetwork(input_dims, n_actions=n_actions, name=Constants.env_id+'_actor', max_action=env.action_space.n)
         self.critic_local_1_nn = CriticNetwork(input_dims, n_actions=n_actions, name=Constants.env_id+'_critic_local_1')
         self.critic_local_2_nn = CriticNetwork(input_dims, n_actions=n_actions, name=Constants.env_id+'_critic_local_2')
@@ -30,10 +25,6 @@ class Agent():
         state = T.Tensor([observation]).to(Constants.device)
         _, max_probability_action = self.actor_nn.sample_action(state)
         return max_probability_action
-
-    """ def calc_alpha_loss(self, log_probs):
-        alpha_loss = - (self.log_alpha * (log_probs.detach() + self.target_entropy)).mean()
-        return alpha_loss """
 
     def remember(self, state, action, reward, new_state, done):
         self.memory.store_transition(state, action, reward, new_state, done)
@@ -60,12 +51,11 @@ class Agent():
             q1_new_policy = T.argmax(action_logits1, dim=1, keepdim=True)
             action_logits2 = self.critic_target_2_nn(next_state)
             q2_new_policy = T.argmax(action_logits2, dim=1, keepdim=True)
-            critic_value = T.min(q1_new_policy, q2_new_policy)
-            min_qf_next_target = action_probabilities * (critic_value - Hyper.alpha * log_action_probabilities)
+            q_value = T.min(q1_new_policy, q2_new_policy)
+            min_qf_next_target = action_probabilities * (q_value - Hyper.alpha * log_action_probabilities)
             min_qf_next_target_sum = min_qf_next_target.sum(dim=1).unsqueeze(-1)
             not_done = (1.0 - done*1).unsqueeze(-1)
             next_q_value = reward.unsqueeze(-1) + not_done * Hyper.gamma * (min_qf_next_target_sum)
-            #next_q_value = next_q_value.to(dtype=float)
         
         action_logits1 = self.critic_local_1_nn(state).gather(1, action.long())
         q_value1 = action_logits1.sum(dim=1).unsqueeze(-1)
@@ -75,28 +65,14 @@ class Agent():
         self.critic_local_2_nn.optimizer.zero_grad()
         critic_1_loss = 0.5*F.mse_loss(q_value1, next_q_value)
         critic_2_loss = 0.5*F.mse_loss(q_value2, next_q_value)
-
-        """ action_logits1 = self.critic_local_1_nn(state).gather(1, action.long())
-        q_index1 = T.argmax(action_logits1, dim=1, keepdim=True)[0,0]
-        q_value1 = action_logits1[:, q_index1].to(dtype=float).view(-1)
-        action_logits2 = self.critic_local_2_nn(state).gather(1, action.long())
-        q_index2 = T.argmax(action_logits2, dim=1, keepdim=True)[0,0]
-        q_value2 = action_logits2[:, q_index2].to(dtype=float).view(-1)
-        self.critic_local_1_nn.optimizer.zero_grad()
-        self.critic_local_2_nn.optimizer.zero_grad()
-        critic_1_loss = 0.5*F.mse_loss(q_value1, next_q_value)
-        critic_2_loss = 0.5*F.mse_loss(q_value2, next_q_value) """
-
         critic_loss = critic_1_loss + critic_2_loss
         critic_loss.backward()
         self.critic_local_1_nn.optimizer.step()
         self.critic_local_2_nn.optimizer.step()
 
-        
-
         (action_probabilities, log_action_probabilities), _ = self.actor_nn.sample_action(state)
         # CHANGE0005 Objective for policy
-        actor_loss = action_probabilities * (Hyper.alpha * log_action_probabilities - critic_value)
+        actor_loss = action_probabilities * (Hyper.alpha * log_action_probabilities - q_value)
         actor_loss = T.mean(actor_loss)
         self.actor_nn.optimizer.zero_grad()
         actor_loss.backward(retain_graph=True)
@@ -108,29 +84,14 @@ class Agent():
         # CHANGE0003 Soft state-value where actions are discrete
         qf1_pi = self.critic_local_1_nn(state)
         qf2_pi = self.critic_local_2_nn(state)
-        critic_value = T.min(qf1_pi, qf2_pi)
-        inside_term = Hyper.alpha * log_action_probabilities - critic_value
+        q_value = T.min(qf1_pi, qf2_pi)
+        inside_term = Hyper.alpha * log_action_probabilities - q_value
         #value_target = action_probabilities * (critic_value - self.alpha * log_action_probabilities)   
-        value_loss = (action_probabilities * inside_term).sum(dim=1).mean()
-        value_loss.backward(retain_graph=True)
+        policy_loss = (action_probabilities * inside_term).sum(dim=1).mean()
+        policy_loss.backward(retain_graph=True)
         self.value_nn.optimizer.step()
+        self.update_network_parameters(Hyper.tau)
         self.update_q_weights()
-
-        """ self.critic_local_1_nn.optimizer.zero_grad()
-        self.critic_local_2_nn.optimizer.zero_grad()
-        q_hat = Hyper.reward_scale*reward + Hyper.gamma*new_value_from_nn
-        action_logits1 = self.critic_local_1_nn(state)
-        q1_old_policy = T.argmax(action_logits1, dim=1, keepdim=True).view(-1)
-        action_logits2 = self.critic_local_2_nn(state)
-        q2_old_policy = T.argmax(action_logits2, dim=1, keepdim=True).view(-1)
-        critic_1_loss = 0.5*F.mse_loss(q1_old_policy, q_hat)
-        critic_2_loss = 0.5*F.mse_loss(q2_old_policy, q_hat)
-
-        critic_loss = critic_1_loss + critic_2_loss
-        critic_loss.backward()
-        self.critic_local_1_nn.optimizer.step()
-        self.critic_local_2_nn.optimizer.step() """
-        #self.update_network_parameters()
 
     def update_q_weights(self):
         local_1_parameters = self.critic_local_1_nn.named_parameters()

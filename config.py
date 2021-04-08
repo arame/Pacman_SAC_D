@@ -6,12 +6,11 @@ class Hyper:
     alpha=0.0003    # learning rate for actor network
     beta=0.0003     # learning rate for critic and value networks
     gamma = 0.99    # discount factor
-    reward_scale=2  # reward scale is the most important hyperparameter
     tau=0.005       # tests show that 0.005 is about the best value
     batch_size=100
     layer1_size=256
     layer2_size=256
-    n_games = 250
+    n_games = 250   # There are about 500 steps per game
     n_actions = 9
     #max_size=1000000
     max_size=1000   # 1 million is a better value but my computer can't take it
@@ -31,10 +30,10 @@ class Hyper:
         print("*"*100)
         print("Hyperparameters used:")
         print("---------------------")
+        print(f"environment = {Constants.env_id}")
         print(f"alpha = {Hyper.alpha}")
         print(f"beta = {Hyper.beta}")
         print(f"gamma = {Hyper.gamma}")
-        print(f"reward scale = {Hyper.reward_scale}")
         print(f"tau = {Hyper.tau}")
         print(f"batch size = {Hyper.batch_size}")
         print(f"number of games = {Hyper.n_games}")

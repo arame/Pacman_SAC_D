@@ -53,7 +53,7 @@ def main():
                 agent.save_models()
 
         episode = i + 1
-        print(f"episode {episode}: score {score}, trailing 100 games avg {avg_score}, steps {steps}, {Constants.env_id} scale {Hyper.reward_scale}")
+        print(f"episode {episode}: score {score}, trailing 100 games avg {avg_score}, steps {steps}, total steps {total_steps}")
 
     print(f"total number of steps taken: {total_steps}")
     if not load_checkpoint:

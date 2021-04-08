@@ -42,8 +42,8 @@ class Agent():
         action = T.tensor(action, dtype=T.float).to(Constants.device)
 
         # value_from_nn = self.value_nn(state).view(-1)
-        value_from_nn = self.value_nn(state)
-        new_value_from_nn = self.target_value_nn(next_state).view(-1)
+        """ value_from_nn = self.value_nn(state)
+        new_value_from_nn = self.target_value_nn(next_state).view(-1) """
        
         (action_probabilities, log_action_probabilities), _ = self.actor_nn.sample_action(next_state)
         with T.no_grad():

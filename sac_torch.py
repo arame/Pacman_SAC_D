@@ -41,10 +41,6 @@ class Agent():
         state = T.tensor(state, dtype=T.float).to(Constants.device)
         action = T.tensor(action, dtype=T.float).to(Constants.device)
 
-        # value_from_nn = self.value_nn(state).view(-1)
-        """ value_from_nn = self.value_nn(state)
-        new_value_from_nn = self.target_value_nn(next_state).view(-1) """
-       
         (action_probabilities, log_action_probabilities), _ = self.actor_nn.sample_action(next_state)
         with T.no_grad():
             action_logits1 = self.critic_target_1_nn(next_state)
@@ -56,7 +52,7 @@ class Agent():
             min_qf_next_target_sum = min_qf_next_target.sum(dim=1).unsqueeze(-1)
             not_done = (1.0 - done*1).unsqueeze(-1)
             next_q_value = reward.unsqueeze(-1) + not_done * Hyper.gamma * (min_qf_next_target_sum)
-        
+
         action_logits1 = self.critic_local_1_nn(state).gather(1, action.long())
         q_value1 = action_logits1.sum(dim=1).unsqueeze(-1)
         action_logits2 = self.critic_local_2_nn(state).gather(1, action.long())
@@ -71,22 +67,31 @@ class Agent():
         self.critic_local_2_nn.optimizer.step()
 
         (action_probabilities, log_action_probabilities), _ = self.actor_nn.sample_action(state)
+        # -------------------------------------------------------------------------------------------
+        # CHECK THIS; Petros do not include this code. Yet if I remove it, the episode
+        # results do not change, the score and number of steps become fixed after 1 or 2 episodes
+        # -------------------------------------------------------------------------------------------
         # CHANGE0005 Objective for policy
         actor_loss = action_probabilities * (Hyper.alpha * log_action_probabilities - q_value)
         actor_loss = T.mean(actor_loss)
         self.actor_nn.optimizer.zero_grad()
         actor_loss.backward(retain_graph=True)
         self.actor_nn.optimizer.step()
-        #self.alpha = self.log_alpha.exp()
 
-        self.value_nn.optimizer.zero_grad()
-        """Calculates the loss for the actor. This loss includes the additional entropy term"""
+        # -------------------------------------------------------------------------------------------
+        # CHECK THIS; Petros does not use the value network in his code. 
+        # Yet if I remove the Value network optimiser step as below, the episode results do not change,
+        # the score and number of steps become fixed after 1 or 2 episodes.
+        # So I have kept it in, but I do not understand how this works.
+        # I tried using different network optimisers, but I get the same problem.
+        # -------------------------------------------------------------------------------------------
+        # Calculates the loss for the actor. This loss includes the additional entropy term
         # CHANGE0003 Soft state-value where actions are discrete
+        self.value_nn.optimizer.zero_grad()
         qf1_pi = self.critic_local_1_nn(state)
         qf2_pi = self.critic_local_2_nn(state)
         q_value = T.min(qf1_pi, qf2_pi)
         inside_term = Hyper.alpha * log_action_probabilities - q_value
-        #value_target = action_probabilities * (critic_value - self.alpha * log_action_probabilities)   
         policy_loss = (action_probabilities * inside_term).sum(dim=1).mean()
         policy_loss.backward(retain_graph=True)
         self.value_nn.optimizer.step()

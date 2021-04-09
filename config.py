@@ -10,7 +10,7 @@ class Hyper:
     batch_size=100
     layer1_size=256
     layer2_size=256
-    n_games = 250   # There are about 500 steps per game
+    n_games = 250   # There are on average about 500 steps per game
     n_actions = 9
     #max_size=1000000
     max_size=1000   # 1 million is a better value but my computer can't take it

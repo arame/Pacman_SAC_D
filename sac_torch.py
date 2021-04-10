@@ -59,24 +59,14 @@ class Agent():
         q_value2 = action_logits2.sum(dim=1).unsqueeze(-1)
         self.critic_local_1_nn.optimizer.zero_grad()
         self.critic_local_2_nn.optimizer.zero_grad()
-        critic_1_loss = 0.5*F.mse_loss(q_value1, next_q_value)
-        critic_2_loss = 0.5*F.mse_loss(q_value2, next_q_value)
-        critic_loss = critic_1_loss + critic_2_loss
-        critic_loss.backward()
+        critic_1_loss = F.mse_loss(q_value1, next_q_value)
+        critic_2_loss = F.mse_loss(q_value2, next_q_value)
+        critic_1_loss.backward()
+        critic_2_loss.backward()
         self.critic_local_1_nn.optimizer.step()
         self.critic_local_2_nn.optimizer.step()
 
         (action_probabilities, log_action_probabilities), _ = self.actor_nn.sample_action(state)
-        # -------------------------------------------------------------------------------------------
-        # CHECK THIS; Petros do not include this code. Yet if I remove it, the episode
-        # results do not change, the score and number of steps become fixed after 1 or 2 episodes
-        # -------------------------------------------------------------------------------------------
-        # CHANGE0005 Objective for policy
-        actor_loss = action_probabilities * (Hyper.alpha * log_action_probabilities - q_value)
-        actor_loss = T.mean(actor_loss)
-        self.actor_nn.optimizer.zero_grad()
-        actor_loss.backward(retain_graph=True)
-        self.actor_nn.optimizer.step()
 
         # -------------------------------------------------------------------------------------------
         # CHECK THIS; Petros does not use the value network in his code. 
@@ -87,15 +77,20 @@ class Agent():
         # -------------------------------------------------------------------------------------------
         # Calculates the loss for the actor. This loss includes the additional entropy term
         # CHANGE0003 Soft state-value where actions are discrete
-        self.value_nn.optimizer.zero_grad()
-        qf1_pi = self.critic_local_1_nn(state)
-        qf2_pi = self.critic_local_2_nn(state)
-        q_value = T.min(qf1_pi, qf2_pi)
+        #self.value_nn.optimizer.zero_grad()
+        self.actor_nn.optimizer.zero_grad()
+        action_logits1 = self.critic_target_1_nn(state)
+        q1_new_policy = T.argmax(action_logits1, dim=1, keepdim=True)
+        action_logits2 = self.critic_target_2_nn(state)
+        q2_new_policy = T.argmax(action_logits2, dim=1, keepdim=True)
+        q_value = T.min(q1_new_policy, q2_new_policy)
         inside_term = Hyper.alpha * log_action_probabilities - q_value
         policy_loss = (action_probabilities * inside_term).sum(dim=1).mean()
         policy_loss.backward(retain_graph=True)
-        self.value_nn.optimizer.step()
-        self.update_network_parameters(Hyper.tau)
+        #self.value_nn.optimizer.step()
+        self.actor_nn.optimizer.step()
+
+        #self.update_network_parameters(Hyper.tau)
         self.update_q_weights()
 
     def update_q_weights(self):

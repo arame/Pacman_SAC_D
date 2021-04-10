@@ -17,7 +17,8 @@ def main():
     filename = f"{Constants.env_id}_games{Hyper.n_games}_alpha{Hyper.alpha}.png"
     figure_file = f'plots/{filename}'
 
-    best_score = env.reward_range[0]
+    best_ave_score = env.reward_range[0]
+    best_score = 0
     score_history = []
     load_checkpoint = False
     if load_checkpoint:
@@ -46,14 +47,16 @@ def main():
             observation = new_observation
         score_history.append(score)
         avg_score = np.mean(score_history[-100:])
+        if score > best_score:
+            best_score = score
 
-        if avg_score > best_score:
-            best_score = avg_score
+        if avg_score > best_ave_score:
+            best_ave_score = avg_score
             if not load_checkpoint:
                 agent.save_models()
 
         episode = i + 1
-        print(f"episode {episode}: score {score}, best score {best_score}, trailing 100 games avg {avg_score}, steps {steps}, total steps {total_steps}")
+        print(f"episode {episode}: score {score}, best_score {best_score}, best ave score {best_ave_score}, trailing 100 games avg {avg_score}, steps {steps}, total steps {total_steps}")
 
     print(f"total number of steps taken: {total_steps}")
     if not load_checkpoint:

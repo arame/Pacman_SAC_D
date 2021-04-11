@@ -3,8 +3,8 @@ import os
 
 
 class Hyper:
-    alpha=0.0005    # learning rate for actor network
-    beta=0.0005     # learning rate for critic and value networks
+    alpha=0.001    # learning rate for actor network (try 0.0003)
+    beta=0.001     # learning rate for critic network (try 0.0003)
     gamma = 0.99    # discount factor
     tau=0.005       # tests show that 0.005 is about the best value
     batch_size=100

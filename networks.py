@@ -115,7 +115,7 @@ class ActorNetwork(nn.Module):
 
     def load_checkpoint(self):
         self.load_state_dict(T.load(self.checkpoint_file))
-
+""" 
 class ValueNetwork(nn.Module):
     def __init__(self, input_dims, name):
         super(ValueNetwork, self).__init__()
@@ -158,4 +158,4 @@ class ValueNetwork(nn.Module):
 
     def load_checkpoint(self):
         self.load_state_dict(T.load(self.checkpoint_file))
-
+ """

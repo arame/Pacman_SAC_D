@@ -4,7 +4,7 @@ import torch.nn.functional as F
 import numpy as np
 from torch.optim import Adam
 from buffer import ReplayBuffer
-from networks import ActorNetwork, CriticNetwork, ValueNetwork
+from networks import ActorNetwork, CriticNetwork
 from config import Hyper, Constants
 CUDA_LAUNCH_BLOCKING=1
 
@@ -17,9 +17,9 @@ class Agent():
         self.critic_local_2_nn = CriticNetwork(input_dims, n_actions=n_actions, name=Constants.env_id+'_critic_local_2')
         self.critic_target_1_nn = CriticNetwork(input_dims, n_actions=n_actions, name=Constants.env_id+'_critic_target_1')
         self.critic_target_2_nn = CriticNetwork(input_dims, n_actions=n_actions, name=Constants.env_id+'_critic_target_2')
-        self.value_nn = ValueNetwork(input_dims, name=Constants.env_id+'_value')
+        """ self.value_nn = ValueNetwork(input_dims, name=Constants.env_id+'_value')
         self.target_value_nn = ValueNetwork(input_dims, name=Constants.env_id+'_target_value')
-        self.update_network_parameters(tau=1)
+        self.update_network_parameters(tau=1) """
 
     def choose_action(self, observation):
         state = T.Tensor([observation]).to(Constants.device)
@@ -69,15 +69,8 @@ class Agent():
         (action_probabilities, log_action_probabilities), _ = self.actor_nn.sample_action(state)
 
         # -------------------------------------------------------------------------------------------
-        # CHECK THIS; Petros does not use the value network in his code. 
-        # Yet if I remove the Value network optimiser step as below, the episode results do not change,
-        # the score and number of steps become fixed after 1 or 2 episodes.
-        # So I have kept it in, but I do not understand how this works.
-        # I tried using different network optimisers, but I get the same problem.
-        # -------------------------------------------------------------------------------------------
         # Calculates the loss for the actor. This loss includes the additional entropy term
         # CHANGE0003 Soft state-value where actions are discrete
-        #self.value_nn.optimizer.zero_grad()
         self.actor_nn.optimizer.zero_grad()
         action_logits1 = self.critic_target_1_nn(state)
         q1_new_policy = T.argmax(action_logits1, dim=1, keepdim=True)
@@ -87,10 +80,8 @@ class Agent():
         inside_term = Hyper.alpha * log_action_probabilities - q_value
         policy_loss = (action_probabilities * inside_term).sum(dim=1).mean()
         policy_loss.backward(retain_graph=True)
-        #self.value_nn.optimizer.step()
         self.actor_nn.optimizer.step()
 
-        #self.update_network_parameters(Hyper.tau)
         self.update_q_weights()
 
     def update_q_weights(self):
@@ -106,26 +97,11 @@ class Agent():
         for target_param, local_param in zip(target_params, local_params):
             target_param[1].data.copy_(tau*local_param[1].data + (1.0-tau)*target_param[1].data)
 
-    def update_network_parameters(self, tau=None):
-        if tau is None:
-            tau = Hyper.tau
-
-        target_value_params = self.target_value_nn.named_parameters()
-        value_params = self.value_nn.named_parameters()
-
-        target_value_state_dict = dict(target_value_params)
-        value_state_dict = dict(value_params)
-        for name in value_state_dict:
-            value_state_dict[name] = tau*value_state_dict[name].clone() + \
-                    (1-tau)*target_value_state_dict[name].clone()
-
-        self.target_value_nn.load_state_dict(value_state_dict)
-
     def save_models(self):
         print('.... saving models ....')
         self.actor_nn.save_checkpoint()
-        self.value_nn.save_checkpoint()
-        self.target_value_nn.save_checkpoint()
+        """ self.value_nn.save_checkpoint()
+        self.target_value_nn.save_checkpoint() """
         self.critic_local_1_nn.save_checkpoint()
         self.critic_local_2_nn.save_checkpoint()
         self.critic_target_1_nn.save_checkpoint()
@@ -134,8 +110,8 @@ class Agent():
     def load_models(self):
         print('.... loading models ....')
         self.actor_nn.load_checkpoint()
-        self.value_nn.load_checkpoint()
-        self.target_value_nn.load_checkpoint()
+        """ self.value_nn.load_checkpoint()
+        self.target_value_nn.load_checkpoint() """
         self.critic_local_1_nn.load_checkpoint()
         self.critic_local_2_nn.load_checkpoint()
         self.critic_target_1_nn.load_checkpoint()

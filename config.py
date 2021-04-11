@@ -3,14 +3,14 @@ import os
 
 
 class Hyper:
-    alpha=0.0003    # learning rate for actor network
-    beta=0.0003     # learning rate for critic and value networks
+    alpha=0.0005    # learning rate for actor network
+    beta=0.0005     # learning rate for critic and value networks
     gamma = 0.99    # discount factor
     tau=0.005       # tests show that 0.005 is about the best value
     batch_size=100
     layer1_size=256
     layer2_size=256
-    n_games = 500   # There are on average about 500 steps per game
+    n_games = 250   # There are on average about 500 steps per game
     n_actions = 9
     #max_size=1000000
     max_size=1000   # 1 million is a better value but my computer can't take it

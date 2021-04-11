@@ -17,9 +17,6 @@ class Agent():
         self.critic_local_2_nn = CriticNetwork(input_dims, n_actions=n_actions, name=Constants.env_id+'_critic_local_2')
         self.critic_target_1_nn = CriticNetwork(input_dims, n_actions=n_actions, name=Constants.env_id+'_critic_target_1')
         self.critic_target_2_nn = CriticNetwork(input_dims, n_actions=n_actions, name=Constants.env_id+'_critic_target_2')
-        """ self.value_nn = ValueNetwork(input_dims, name=Constants.env_id+'_value')
-        self.target_value_nn = ValueNetwork(input_dims, name=Constants.env_id+'_target_value')
-        self.update_network_parameters(tau=1) """
 
     def choose_action(self, observation):
         state = T.Tensor([observation]).to(Constants.device)
@@ -100,8 +97,6 @@ class Agent():
     def save_models(self):
         print('.... saving models ....')
         self.actor_nn.save_checkpoint()
-        """ self.value_nn.save_checkpoint()
-        self.target_value_nn.save_checkpoint() """
         self.critic_local_1_nn.save_checkpoint()
         self.critic_local_2_nn.save_checkpoint()
         self.critic_target_1_nn.save_checkpoint()
@@ -110,8 +105,6 @@ class Agent():
     def load_models(self):
         print('.... loading models ....')
         self.actor_nn.load_checkpoint()
-        """ self.value_nn.load_checkpoint()
-        self.target_value_nn.load_checkpoint() """
         self.critic_local_1_nn.load_checkpoint()
         self.critic_local_2_nn.load_checkpoint()
         self.critic_target_1_nn.load_checkpoint()

@@ -6,7 +6,7 @@ class ReplayBuffer():
     def __init__(self, input_shape):
         self.mem_size = Hyper.max_size
         self.mem_cntr = 0
-        self.state_memory = np.zeros((self.mem_size, *input_shape)) # removed * from input_shape
+        self.state_memory = np.zeros((self.mem_size, *input_shape)) 
         self.new_state_memory = np.zeros((self.mem_size, *input_shape))
         self.action_memory = np.zeros((self.mem_size, Hyper.n_actions))
         self.reward_memory = np.zeros(self.mem_size)

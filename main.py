@@ -25,7 +25,12 @@ def main():
         agent.load_models()
         env.render(mode='human')
     total_steps = 0
+    game_id = 0
     for i in range(Hyper.n_games):
+        game_id += 1
+        if game_id % 20 == 0:
+            Hyper.alpha = Hyper.alpha * 1.2
+            Hyper.beta = Hyper.beta * 1.2
         observation = env.reset()
         done = False
         steps = 0
